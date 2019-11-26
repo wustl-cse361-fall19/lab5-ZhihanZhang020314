@@ -6,8 +6,8 @@
  *                 CSE 361: Introduction to Computer Systems                  *
  *                                                                            *
  *  ************************************************************************  *
- *                     insert your documentation here. :)                     *
- *                                                                            *
+ *                            Zhihan Zhang                                    *
+ *                            WUSTL ID: 478594                                *
  *  ************************************************************************  *
  *  ** ADVICE FOR STUDENTS. **                                                *
  *  Step 0: Please read the writeup!                                          *
@@ -126,6 +126,7 @@ struct block
 
 /* Global variables */
 /* Pointer to first block */
+
 // Total size = 8 + 12*8 + 8 = 112 bytes
 
 static block_t *heap_start = NULL;
