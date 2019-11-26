@@ -282,17 +282,17 @@ static inline void listDelete(block_t *block)
     else
     {   //printSList();
         ptr = smallListHeader;
-        while(ptr!=NULL)
+        while(ptr != NULL)
         {
             if(ptr == block)
             {   
                 if(ptr == smallListHeader)
                 {
-                    smallListHeader = ptr->payload.links.next;
+                    smallListHeader = ptr -> payload.links.next;
                     printSList(); 
                     return;
                 }
-                prv->payload.links.next = ptr->payload.links.next;
+                prv->payload.links.next = ptr -> payload.links.next;
                 //printSList();
                 return;
             }
@@ -325,9 +325,9 @@ bool mm_init(void)
     start[0] = pack(0, true); // Prologue footer
     start[1] = pack(0, true)|0x2; // Epilogue header
     // Heap starts with first "block header", currently the epilogue footer
-    heap_start = (block_t *) &(start[1]);
+    heap_start = (block_t *) & (start[1]);
 
-    for(i=0;i<LISTSIZE;i++)
+    for(i=0; i < LISTSIZE;i++)
         listHeader[i] = NULL;  
         smallListHeader = NULL;
     
@@ -422,8 +422,8 @@ void free(void *bp)
     size_t size = get_size(block);
 
     // Extract ABIT and SBIT
-    abit = (block->header)&ABIT;
-    sbit = (block->header)&SBIT;
+    abit = (block->header) & ABIT;
+    sbit = (block->header) & SBIT;
 
     // Carry over ABIT and SBIT information over to the free block
     write_header(block, size+abit+sbit, false);
@@ -431,7 +431,7 @@ void free(void *bp)
     temp = find_next(block);
 
     // Clear ABIT in the next block to indicate free block
-    temp->header = temp->header&(~ABIT);
+    temp->header = temp->header & (~ABIT);
 
     //printSList();
     coalesce(block);
@@ -527,7 +527,7 @@ static inline  block_t *extend_heap(size_t size)
     void *bp;
 
     void *eplg = mem_heap_hi();
-    eplg = (((char *)eplg)-7); 
+    eplg = (((char *)eplg) - 7); 
     long epilogueHeaderBit = (ABIT)&(*((long *)eplg));
     long epilogueHeadersBit = (SBIT)&(*((long *)eplg));
 
@@ -559,7 +559,7 @@ static inline  block_t *extend_heap(size_t size)
  */
 static bool check_prev_alloc(block_t *block)
 {
-    if((block->header)&ABIT)
+    if((block->header) & ABIT)
         return true;
     return false;
 }
@@ -578,9 +578,9 @@ static inline block_t *coalesce(block_t * block)
     block_next = find_next(block);
 
     // Check if previous block is a small block, assign block_prev accordingly
-    if(block->header&SBIT)
+    if(block -> header & SBIT)
     {
-        block_prev = (block_t *)(((char *)block)-dsize);
+        block_prev = (block_t *)(((char *)block) - dsize);
     }
     else
     block_prev = find_prev(block);
@@ -605,9 +605,9 @@ static inline block_t *coalesce(block_t * block)
         if(get_size(block_next) <= dsize)
         {
             temp = find_next(block_next);
-            temp->header = temp -> header&(~SBIT);
+            temp->header = temp -> header & (~SBIT);
         }
-        block_next->header = 0;
+        block_next -> header = 0;
 
         // Set the ABIT since the previous block after coalescing has to be allocated
         write_header(block, size+ABIT, false);
@@ -632,7 +632,7 @@ static inline block_t *coalesce(block_t * block)
         if(get_size(block)<=dsize)
         {
             temp = block_next;
-            temp->header = temp -> header&(~SBIT);
+            temp->header = temp -> header & (~SBIT);
         }
         block->header = 0;
         block = block_prev;
@@ -652,7 +652,7 @@ static inline block_t *coalesce(block_t * block)
         if(get_size(block_next) <= dsize)
         {
             temp = find_next(block_next);
-            temp->header = temp -> header&(~SBIT);
+            temp->header = temp -> header & (~SBIT);
         }
         block_next->header = 0;
 
@@ -706,10 +706,10 @@ static void place(block_t *block, size_t asize)
         write_header(block, csize+abit, true);
 
         // If small block is allocated, set SBIT in next block 
-        if(csize==dsize)
+        if(csize == dsize)
         {
             block_next = find_next(block);
-            block_next->header = (block_next->header)|(SBIT);
+            block_next->header = (block_next -> header) | (SBIT);
         }
     }
    
@@ -732,7 +732,7 @@ static inline block_t *find_fit(size_t asize)
         while(block!=NULL)
         {   
             tsize = get_size(block);
-            if(asize<=tsize)
+            if(asize <= tsize)
             {
                 return block;
             }
@@ -755,7 +755,7 @@ static inline block_t *find_fit(size_t asize)
                 // before deciding the best fit free block.
                 if(t++==THRESHFIT)
                 return bestblk;
-                if((tsize-asize)<(bsize-asize))
+                if((tsize-asize) < (bsize-asize))
                 {
                     bsize = tsize;
                     bestblk = block;
@@ -869,8 +869,8 @@ static void write_header(block_t *block, size_t size, bool alloc)
     // If small block encountered, set SBIT of next block
     if((size & size_mask) == dsize)
     {
-        temp = (block_t *)(((char*)block)+dsize);
-        temp->header = temp->header|SBIT;
+        temp = (block_t *)(((char*)block) + dsize);
+        temp -> header = temp -> header | SBIT;
     }
     // Carry over the SBIT and pack
     block->header = pack(size|(block->header&SBIT), alloc);
@@ -879,9 +879,9 @@ static void write_header(block_t *block, size_t size, bool alloc)
     {
         temp = find_next(block);   
         // If prologue or epilogue, return without doing anything
-        if(temp==block)
+        if(temp == block)
             return;
-        temp->header = temp->header|ABIT;
+        temp -> header = temp -> header | ABIT;
     }
 }
 
@@ -896,9 +896,9 @@ static void write_footer(block_t *block, size_t size, bool alloc)
    
     word_t *footerp;
     // If small block encountered, return without doing anything
-    if(size<=dsize)
+    if(size <= dsize)
         return;
-    footerp = (word_t *)((block->payload.data) + get_size(block) - dsize);
+    footerp = (word_t *)((block -> payload.data) + get_size(block) - dsize);
     *footerp = pack(size, alloc);
 }
 
