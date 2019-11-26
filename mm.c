@@ -164,12 +164,12 @@ static block_t *find_next(block_t *block);
 static word_t *find_prev_footer(block_t *block);
 static block_t *find_prev(block_t *block);
 
-//Extra functions defined by me:
+//Extra functions defined by Zhihan
+static int getList(size_t size);
 static void listInsert(block_t *block, size_t size);
 static void listDelete(block_t *block);
-static int getList(size_t size);
 static void printSList();
-static bool check_prev_alloc(block_t *block);
+static bool checkAlloc(block_t *block);
 
 /* printSList: Prints the SMALL BLOCKS LIST, used only in debugging and mm_checkheap()
  */
@@ -177,7 +177,7 @@ static void printSList() //print small list
 {
     block_t * ptr = smallListHeader;
    
-    while(ptr!=NULL)
+    while (ptr != NULL)
     {
    
         ptr = ptr -> payload.links.next;
@@ -190,29 +190,29 @@ static void printSList() //print small list
 
 static int getList(size_t size)
 {
-    if((size>16) && (size<=32))
+    if ((size>16) && (size<=32))
         return 0;
-    if((size>32) && (size<=64))
+    if ((size>32) && (size<=64))
         return 1;
-    if((size>64) && (size<=128))
+    if ((size>64) && (size<=128))
         return 2;
-    if((size>128) && (size<=256))
+    if ((size>128) && (size<=256))
         return 3;
-    if((size>256) && (size<=512))
+    if ((size>256) && (size<=512))
         return 4;
-    if((size>512) && (size<=1024))
+    if ((size>512) && (size<=1024))
         return 5;
-    if((size>1024) && (size<=2048))
+    if ((size>1024) && (size<=2048))
         return 6;
-    if((size>2048) && (size<=4098))
+    if ((size>2048) && (size<=4098))
         return 7;
-    if((size>4098) && (size<=8192))
+    if ((size>4098) && (size<=8192))
         return 8;
-    if((size>8192) && (size<=16384))
+    if ((size>8192) && (size<=16384))
         return 9;
-    if((size>16384) && (size<=32768))
+    if ((size>16384) && (size<=32768))
         return 10;
-    if(size>32768)
+    if (size>32768)
         return 11;
 
     // Return -1 if small block is encountered
@@ -229,12 +229,12 @@ static inline void listInsert(block_t *block, size_t size)
 
     // Insert into segregated list for big sizes
     // Insert into the beginning of the list
-    if(size > dsize)
+    if (size > dsize)
     {   
         PREVBLOCK = NULL;
         int sIndex = getList(size);
         NEXTBLOCK = listHeader[sIndex];
-        if(listHeader[sIndex]!= NULL)
+        if(listHeader[sIndex] != NULL)
             listHeader[sIndex] -> payload.links.prev = block;
         listHeader[sIndex] = block;
         return;
@@ -263,30 +263,31 @@ static inline void listDelete(block_t *block)
     block_t *ptr,*prv=NULL;
     block_t *blockNext;
     // Delete from segregated list for big sizes
-    if(size>dsize)
+    if (size > dsize)
     {
         blockNext = NEXTBLOCK;
         blockPrev = PREVBLOCK;
-        if(blockPrev!=NULL)
-            blockPrev->payload.links.next = blockNext;
+        if(blockPrev != NULL)
+            blockPrev -> payload.links.next = blockNext;
         else
         {
             sIndex = getList(size);
             listHeader[sIndex] = blockNext;       
         }
-    if(blockNext!=NULL)
-        blockNext->payload.links.prev = blockPrev;
+    if (blockNext != NULL)
+        blockNext -> payload.links.prev = blockPrev;
     return;
     }
+
     // Delete from small blocks list for small sizes
     else
     {   //printSList();
         ptr = smallListHeader;
-        while(ptr != NULL)
+        while (ptr != NULL)
         {
-            if(ptr == block)
+            if (ptr == block)
             {   
-                if(ptr == smallListHeader)
+                if (ptr == smallListHeader)
                 {
                     smallListHeader = ptr -> payload.links.next;
                     printSList(); 
@@ -297,7 +298,7 @@ static inline void listDelete(block_t *block)
                 return;
             }
             prv = ptr;
-            ptr = ptr->payload.links.next;
+            ptr = ptr -> payload.links.next;
         }
       
     }   
@@ -307,8 +308,8 @@ static inline void listDelete(block_t *block)
  * Initializes the heap; it is run once when heap_start == NULL.
  * prior to any extend_heap operation, this is the heap:
  * start            start+8           start+16
- * INIT: | PROLOGUE_FOOTER | EPILOGUE_HEADER |
- * heap_listp ends up pointing to the epilogue header.
+ * INIT: | PROLOGUE_FOOTER | END_HEADER |
+ * heap_listp ends up pointing to the end header.
  */
 bool mm_init(void) 
 {
@@ -323,11 +324,12 @@ bool mm_init(void)
     }
 
     start[0] = pack(0, true); // Prologue footer
-    start[1] = pack(0, true)|0x2; // Epilogue header
-    // Heap starts with first "block header", currently the epilogue footer
+    start[1] = pack(0, true)|0x2; // End header
+    
+    // Heap starts with first "block header", currently the end footer
     heap_start = (block_t *) & (start[1]);
 
-    for(i=0; i < LISTSIZE;i++)
+    for(i=0; i < LISTSIZE; i++)
         listHeader[i] = NULL;  
         smallListHeader = NULL;
     
@@ -411,7 +413,7 @@ void *malloc(size_t size)
 void free(void *bp)
 {
     block_t *temp;
-    int abit,sbit;
+    int abit, sbit;
 
     if (bp == NULL)
     {
@@ -422,8 +424,8 @@ void free(void *bp)
     size_t size = get_size(block);
 
     // Extract ABIT and SBIT
-    abit = (block->header) & ABIT;
-    sbit = (block->header) & SBIT;
+    abit = (block -> header) & ABIT;
+    sbit = (block -> header) & SBIT;
 
     // Carry over ABIT and SBIT information over to the free block
     write_header(block, size+abit+sbit, false);
@@ -431,7 +433,7 @@ void free(void *bp)
     temp = find_next(block);
 
     // Clear ABIT in the next block to indicate free block
-    temp->header = temp->header & (~ABIT);
+    temp->header = temp -> header & (~ABIT);
 
     //printSList();
     coalesce(block);
@@ -518,7 +520,7 @@ void *calloc(size_t elements, size_t size)
 
 /*
  * <what does extend_heap do?>
- * Extends the heap with the requested number of bytes, and recreates epilogue header. 
+ * Extends the heap with the requested number of bytes, and recreates end header. 
  * Returns a pointer to the result of coalescing the newly-created block with previous free block, 
  * if applicable, or NULL in failure.
  */
@@ -526,10 +528,10 @@ static inline  block_t *extend_heap(size_t size)
 {
     void *bp;
 
-    void *eplg = mem_heap_hi();
-    eplg = (((char *)eplg) - 7); 
-    long epilogueHeaderBit = (ABIT)&(*((long *)eplg));
-    long epilogueHeadersBit = (SBIT)&(*((long *)eplg));
+    void *e = mem_heap_hi();
+    e = (((char *)e) - 7); 
+    long EHeaderBit = (ABIT) & (*((long *)e));
+    long EHeaders = (SBIT) & (*((long *)e));
 
     // Allocate an even number of words to maintain alignment
     size = round_up(size, dsize);
@@ -543,10 +545,10 @@ static inline  block_t *extend_heap(size_t size)
     write_header(block, size, false);
     write_footer(block, size, false);
 
-    // Carry over epilogue ABIT and SBIT
-    block->header |= (epilogueHeaderBit)|(epilogueHeadersBit);
+    // Carry over end ABIT and SBIT
+    block->header |= (EHeaderBit) | (EHeaders);
     
-    // Create new epilogue header
+    // Create new end header
     block_t *block_next = find_next(block);
     block_next -> header = 0;
     write_header(block_next, 0, true);
@@ -555,11 +557,11 @@ static inline  block_t *extend_heap(size_t size)
     return coalesce(block);
 }
 
-/* check_prev_alloc: Checks the ABIT of current block and returns true if the previous block is allocated, false otherwise.
+/* checkAlloc: Checks the ABIT of current block and returns true if the previous block is allocated, false otherwise.
  */
-static bool check_prev_alloc(block_t *block)
+static bool checkAlloc(block_t *block)
 {
-    if((block->header) & ABIT)
+    if((block -> header) & ABIT)
         return true;
     return false;
 }
@@ -584,7 +586,7 @@ static inline block_t *coalesce(block_t * block)
     }
     else
     block_prev = find_prev(block);
-    bool prev_alloc = check_prev_alloc(block);
+    bool prev_alloc = checkAlloc(block);
     bool next_alloc = get_alloc(block_next);
 
     if (prev_alloc && next_alloc)              // Case 1
@@ -679,8 +681,8 @@ static void place(block_t *block, size_t asize)
     size_t csize = get_size(block);
 
     // Extract ABIT and SBIT in current block
-    int abit = (block->header) & (ABIT);
-    int sbit = (block->header) & (SBIT);
+    int abit = (block -> header) & (ABIT);
+    int sbit = (block -> header) & (SBIT);
    
     block_t *block_next;
     listDelete(block);
@@ -689,14 +691,14 @@ static void place(block_t *block, size_t asize)
         // Carry over SBIT and ABIT to the allocated block
         write_header(block, asize+abit+sbit, true);
         block_next = find_next(block);
-        block_next->header = 0;
+        block_next -> header = 0;
         // Set SBIT if a small block is allocated
         if(asize==dsize)
             sbit = SBIT;
         else
             sbit = 0;
         // Set ABIT, set/reset SBIT accordingly in the new free block
-        write_header(block_next,csize-asize+ABIT+sbit,false);
+        write_header(block_next, csize-asize+ABIT+sbit, false);
         write_footer(block_next, csize-asize, false);
         coalesce(block_next);
     }
@@ -709,7 +711,7 @@ static void place(block_t *block, size_t asize)
         if(csize == dsize)
         {
             block_next = find_next(block);
-            block_next->header = (block_next -> header) | (SBIT);
+            block_next -> header = (block_next -> header) | (SBIT);
         }
     }
    
@@ -722,8 +724,8 @@ static void place(block_t *block, size_t asize)
 static inline block_t *find_fit(size_t asize)
 {
     block_t *block, *bestblk = NULL;
-    int sIndex = getList(asize),i,t=0;
-    size_t bsize = mem_heapsize(),tsize;
+    int sIndex = getList(asize), i, t=0;
+    size_t bsize = mem_heapsize(), tsize;
 
     // If size<=16, search in small blocks list
     if( sIndex==-1)
@@ -743,19 +745,19 @@ static inline block_t *find_fit(size_t asize)
 
     // Start searching seg list from the corresponding class for asize,
     // continue over to next class if no block is found in that class.
-    for(i=sIndex; i<LISTSIZE; i++)    
+    for (i=sIndex; i<LISTSIZE; i++)    
     {
         block = listHeader[i];
-        while(block!=NULL)
+        while (block!=NULL)
         {   
             tsize = get_size(block);
-            if(asize<tsize)
+            if (asize<tsize)
             {   
                 // THRESHFIT limits the number of blocks to check
                 // before deciding the best fit free block.
-                if(t++==THRESHFIT)
+                if (t ++== THRESHFIT)
                 return bestblk;
-                if((tsize-asize) < (bsize-asize))
+                if ((tsize-asize) < (bsize-asize))
                 {
                     bsize = tsize;
                     bestblk = block;
@@ -763,7 +765,7 @@ static inline block_t *find_fit(size_t asize)
             }
 
             // If sizes match perfectly, return the block immediately
-            else if(asize==tsize)
+            else if (asize == tsize)
             {
                 return block;
             }
@@ -858,52 +860,6 @@ static bool get_alloc(block_t *block)
 }
 
 /*
- * write_header: given a block and its size and allocation status,
- *               writes an appropriate value to the block header. 
- *               It also sets the SBIT and ABIT in the next block 
- *               accordingly.
- */
-static void write_header(block_t *block, size_t size, bool alloc)
-{
-    block_t *temp;
-    // If small block encountered, set SBIT of next block
-    if((size & size_mask) == dsize)
-    {
-        temp = (block_t *)(((char*)block) + dsize);
-        temp -> header = temp -> header | SBIT;
-    }
-    // Carry over the SBIT and pack
-    block->header = pack(size|(block->header&SBIT), alloc);
-    // If allocated block encountered, set ABIT of next block
-    if(alloc == true)
-    {
-        temp = find_next(block);   
-        // If prologue or epilogue, return without doing anything
-        if(temp == block)
-            return;
-        temp -> header = temp -> header | ABIT;
-    }
-}
-
-
-/*
- * write_footer: given a block and its size and allocation status,
- *               writes an appropriate value to the block footer by first
- *               computing the position of the footer.
- */
-static void write_footer(block_t *block, size_t size, bool alloc)
-{
-   
-    word_t *footerp;
-    // If small block encountered, return without doing anything
-    if(size <= dsize)
-        return;
-    footerp = (word_t *)((block -> payload.data) + get_size(block) - dsize);
-    *footerp = pack(size, alloc);
-}
-
-
-/*
  * find_next: returns the next consecutive block on the heap by adding the
  *            size of the block.
  */
@@ -951,4 +907,49 @@ static block_t *payload_to_header(void *bp)
 static void *header_to_payload(block_t *block)
 {
     return (void *)(block->payload.data);
+}
+
+/*
+ * write_header: given a block and its size and allocation status,
+ *               writes an appropriate value to the block header. 
+ *               It also sets the SBIT and ABIT in the next block 
+ *               accordingly.
+ */
+static void write_header(block_t *block, size_t size, bool alloc)
+{
+    block_t *temp;
+    // If small block encountered, set SBIT of next block
+    if((size & size_mask) == dsize)
+    {
+        temp = (block_t *)(((char*)block) + dsize);
+        temp -> header = temp -> header | SBIT;
+    }
+    // Carry over the SBIT and pack
+    block->header = pack(size|(block->header&SBIT), alloc);
+    // If allocated block encountered, set ABIT of next block
+    if(alloc == true)
+    {
+        temp = find_next(block);   
+        // If prologue or end, return without doing anything
+        if(temp == block)
+            return;
+        temp -> header = temp -> header | ABIT;
+    }
+}
+
+
+/*
+ * write_footer: given a block and its size and allocation status,
+ *               writes an appropriate value to the block footer by first
+ *               computing the position of the footer.
+ */
+static void write_footer(block_t *block, size_t size, bool alloc)
+{
+   
+    word_t *footerp;
+    // If small block encountered, return without doing anything
+    if(size <= dsize)
+        return;
+    footerp = (word_t *)((block -> payload.data) + get_size(block) - dsize);
+    *footerp = pack(size, alloc);
 }
