@@ -1,6 +1,6 @@
 /*
  ******************************************************************************
- *                               mm.c                                         *
+ *                                 mm.c                                       *
  *           64-bit struct-based implicit free list memory allocator          *
  *                      without coalesce functionality                        *
  *                 CSE 361: Introduction to Computer Systems                  *
@@ -8,15 +8,7 @@
  *  ************************************************************************  *
  *                            Zhihan Zhang                                    *
  *                            WUSTL ID: 478594                                *
- *  ************************************************************************  *
- *  ** ADVICE FOR STUDENTS. **                                                *
- *  Step 0: Please read the writeup!                                          *
- *  Step 1: Write your heap checker. Write. Heap. checker.                    *
- *  Step 2: Place your contracts / debugging assert statements.               *
- *  Good luck, and have fun!                                                  *
- *                                                                            *
- ******************************************************************************
- */
+ *  ************************************************************************  */
 
 /* Do not change the following! */
 
