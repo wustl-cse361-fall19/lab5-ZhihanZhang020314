@@ -295,6 +295,51 @@ static inline void listDelete(block_t *block)
       
     }   
 }
+
+/*
+ * write_header: given a block and its size and allocation status,
+ *               writes an appropriate value to the block header. 
+ *               It also sets the SBIT and ABIT in the next block 
+ *               accordingly.
+ */
+static void write_header(block_t *block, size_t size, bool alloc)
+{
+    block_t *temp;
+    // If small block encountered, set SBIT of next block
+    if((size & size_mask) == dsize)
+    {
+        temp = (block_t *)(((char*)block) + dsize);
+        temp -> header = temp -> header | SBIT;
+    }
+    // Carry over the SBIT and pack
+    block->header = pack(size|(block->header&SBIT), alloc);
+    // If allocated block encountered, set ABIT of next block
+    if(alloc == true)
+    {
+        temp = find_next(block);   
+        // If prologue or end, return without doing anything
+        if(temp == block)
+            return;
+        temp -> header = temp -> header | ABIT;
+    }
+}
+
+/*
+ * write_footer: given a block and its size and allocation status,
+ *               writes an appropriate value to the block footer by first
+ *               computing the position of the footer.
+ */
+static void write_footer(block_t *block, size_t size, bool alloc)
+{
+   
+    word_t *footerp;
+    // If small block encountered, return without doing anything
+    if(size <= dsize)
+        return;
+    footerp = (word_t *)((block -> payload.data) + get_size(block) - dsize);
+    *footerp = pack(size, alloc);
+}
+
 /*
  * <what does mm_init do?>
  * Initializes the heap; it is run once when heap_start == NULL.
@@ -899,49 +944,4 @@ static block_t *payload_to_header(void *bp)
 static void *header_to_payload(block_t *block)
 {
     return (void *)(block->payload.data);
-}
-
-/*
- * write_header: given a block and its size and allocation status,
- *               writes an appropriate value to the block header. 
- *               It also sets the SBIT and ABIT in the next block 
- *               accordingly.
- */
-static void write_header(block_t *block, size_t size, bool alloc)
-{
-    block_t *temp;
-    // If small block encountered, set SBIT of next block
-    if((size & size_mask) == dsize)
-    {
-        temp = (block_t *)(((char*)block) + dsize);
-        temp -> header = temp -> header | SBIT;
-    }
-    // Carry over the SBIT and pack
-    block->header = pack(size|(block->header&SBIT), alloc);
-    // If allocated block encountered, set ABIT of next block
-    if(alloc == true)
-    {
-        temp = find_next(block);   
-        // If prologue or end, return without doing anything
-        if(temp == block)
-            return;
-        temp -> header = temp -> header | ABIT;
-    }
-}
-
-
-/*
- * write_footer: given a block and its size and allocation status,
- *               writes an appropriate value to the block footer by first
- *               computing the position of the footer.
- */
-static void write_footer(block_t *block, size_t size, bool alloc)
-{
-   
-    word_t *footerp;
-    // If small block encountered, return without doing anything
-    if(size <= dsize)
-        return;
-    footerp = (word_t *)((block -> payload.data) + get_size(block) - dsize);
-    *footerp = pack(size, alloc);
 }
